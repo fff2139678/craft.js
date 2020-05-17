@@ -7,11 +7,13 @@ import { NodeProvider } from "../nodes/NodeContext";
 const shortid = require("shortid");
 
 export function parseNodeFromJSX(
-  element: React.ReactElement,
-  normalise: (node: Node, jsx: React.ReactElement) => void
+  jsx: React.ReactElement | string,
+  normalise?: (node: Node, jsx: React.ReactElement) => void
 ) {
+  let element = jsx as React.ReactElement;
+
   if (typeof element === "string") {
-    element = React.createElement(Fragment, {}, element);
+    element = React.createElement(Fragment, {}, element) as React.ReactElement;
   }
 
   let actualType = element.type as any;
@@ -25,8 +27,10 @@ export function parseNodeFromJSX(
     node.data = {
       type: actualType,
       props: { ...element.props },
-      name: (actualType as any).name,
-      displayName: (actualType as any).name,
+      name:
+        typeof actualType == "string" ? actualType : (actualType as any).name,
+      displayName:
+        typeof actualType == "string" ? actualType : (actualType as any).name,
       custom: {},
     } as NodeData;
 
@@ -91,10 +95,6 @@ export function parseNodeFromJSX(
         node.data.custom = node.data.custom || actualType.craft.custom;
       }
 
-      if (normalise) {
-        normalise(node, element);
-      }
-
       if (actualType.craft.related) {
         node.related = {};
         const relatedNodeContext = {
@@ -110,6 +110,10 @@ export function parseNodeFromJSX(
             );
         });
       }
+    }
+
+    if (normalise) {
+      normalise(node, element as React.ReactElement);
     }
   }) as Node;
 }
